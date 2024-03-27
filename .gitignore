@@ -1,0 +1,6 @@
+Data/
+.idea/
+*.npy
+*.pkl
+*.pickle
+*.h5
