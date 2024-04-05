@@ -160,7 +160,7 @@ image_input = Input(shape=(2048,), name='image_input')
 question_embedding = Embedding(input_dim=len(word_index) + 1, output_dim=300, input_length=max_question_length,
                                name='question_embedding')(question_input)
 
-# Define the LSTM layer for the questions
+# Define the GRU layer for the questions
 question_lstm = tf.keras.layers.GRU(
     units=256, name='question_lstm', return_sequences=True)(question_embedding)
 question_lstm = Dropout(0.2, name='question_dropout')(question_lstm)
@@ -208,14 +208,14 @@ print("starting model training")
 batch_size = 32  # 128
 steps_per_epoch = len(labels) // batch_size
 history = model.fit(data_generator(features_id, padded_sequences, labels, batch_size),
-          steps_per_epoch=steps_per_epoch,
-          epochs=20,
-          validation_data=data_generator(
-              val_features_id, val_padded_sequences, val_labels, batch_size),
-          validation_steps=int(len(val_features_id) / batch_size))
+                    steps_per_epoch=steps_per_epoch,
+                    epochs=40,
+                    validation_data=data_generator(
+                        val_features_id, val_padded_sequences, val_labels, batch_size),
+                    validation_steps=int(len(val_features_id) / batch_size))
 
 with open("history_inceptionv3_GRU_Nadam_optimizer.pkl", "wb") as outfile:
-    pickle.dump(history,outfile)
+    pickle.dump(history, outfile)
 
 model.save("inceptionv3_GRU_Nadam_optimizer-run2.keras")
 print("model saved")

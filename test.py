@@ -10,7 +10,7 @@ from PIL import Image
 import cv2
 
 image_path = "./Data/train_images/train2014/COCO_train2014_000000458752.jpg"
-question = "What color?"
+question = "What is the man playing?"
 
 def load_image(img_path):
     # img = tf.image.decode_jpeg(image, channels=3)
@@ -21,7 +21,7 @@ def load_image(img_path):
     img = tf.expand_dims(img, axis=0)
     return img
 
-model_gru = tf.keras.models.load_model(r'./inceptionv3_GRU_Nadam_optimizer.h5')
+model_gru = tf.keras.models.load_model(r'./inceptionv3_GRU_Nadam_optimizer-run2.keras')
 max_question_length = 30
 
 with open("tokenizer_incepv3_gru.pkl", "rb") as infile:
@@ -30,7 +30,7 @@ with open("tokenizer_incepv3_gru.pkl", "rb") as infile:
 with open("./label_map_incepv3_gru.pkl", "rb") as infile:
     answer_map = pickle.load(infile)
 
-print(answer_map)
+# print(answer_map)
 
 # raise SystemExit
 base_model = InceptionV3(weights='imagenet')
@@ -39,7 +39,7 @@ model = Model(inputs=base_model.input, outputs=base_model.get_layer('avg_pool').
 
 resized_img = load_image(image_path)
 img_features = model.predict(resized_img)
-print(img_features)
+# print(img_features)
 
 # tokenizer.fit_on_texts(answers)
 question_data = tokenizer.texts_to_sequences(question)
