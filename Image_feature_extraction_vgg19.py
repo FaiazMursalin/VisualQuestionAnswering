@@ -7,8 +7,17 @@ import re
 import pickle
 
 # define paths to dataset and output paths
-image_dir = "Data/val_images"
-output_file = "Output/val_features_vgg19.npy"
+TRAIN = 0
+VALIDATION = 1
+DATA_FOR = TRAIN
+# DATA_FOR = VALIDATION
+
+print(f"==================== VGG 19 Feature Extraction for {"train images" if DATA_FOR == TRAIN else "Validation images"} ====================")
+
+image_dir = "Data/train_images" if DATA_FOR == TRAIN else "Data/val_images"
+output_file = "Output/train_features_vgg19.npy" if DATA_FOR == TRAIN else "Output/val_features_vgg19.npy"
+pickle_file = 'train_image_feature_vgg19.pkl' if DATA_FOR == TRAIN else "val_image_feature_vgg19.pkl"
+
 
 # define data generator to preprocess the images
 target_size = (224, 224)
@@ -42,9 +51,9 @@ if train_features:
     for i in range(len(img_ids)):
         image_features[img_ids[i]] = train_features[i]
 
-    # save dictionary to train_image_feature_vgg19.pkl file
-    with open('val_image_feature_vgg19.pkl', 'wb') as fp:
+    # save dictionary to train_image_feature_inception.pkl file
+    with open(pickle_file, 'wb') as fp:
         pickle.dump(image_features, fp)
-        print('dictionary saved successfully to file')
+        print(f'dictionary saved successfully to file: {pickle_file}')
 else:
     print('No images found in the specified directory.')

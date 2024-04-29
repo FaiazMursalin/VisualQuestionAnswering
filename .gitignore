@@ -1,6 +1,7 @@
-Data/
-.idea/
+*.zip
 *.npy
 *.pkl
-*.pickle
-*.h5
+Data/
+Checkpoints/
+old_runs/
+f/

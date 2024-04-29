@@ -10,7 +10,7 @@ from PIL import Image
 import cv2
 
 image_path = "./Data/train_images/train2014/COCO_train2014_000000458752.jpg"
-question = "What is the man playing?"
+question = "What is the color of field?"
 
 def load_image(img_path):
     # img = tf.image.decode_jpeg(image, channels=3)
@@ -21,7 +21,7 @@ def load_image(img_path):
     img = tf.expand_dims(img, axis=0)
     return img
 
-model_gru = tf.keras.models.load_model(r'./inceptionv3_GRU_Nadam_optimizer-run2.keras')
+model_gru = tf.keras.models.load_model(r'./inceptionv3_GRU_Nadam_optimizer-run200epochs.keras')
 max_question_length = 30
 
 with open("tokenizer_incepv3_gru.pkl", "rb") as infile:
