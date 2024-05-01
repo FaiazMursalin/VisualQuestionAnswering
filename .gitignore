@@ -4,4 +4,6 @@
 Data/
 Checkpoints/
 old_runs/
-f/
+old_files/
+Keras models/
+H5 models/

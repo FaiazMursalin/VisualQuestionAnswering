@@ -1,22 +1,34 @@
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
+import tensorflow as tf
 from keras.models import Model
 from keras.applications.vgg19 import VGG19, preprocess_input
 from tqdm import tqdm
 import re
 import pickle
+import sys
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+tf.config.experimental.set_memory_growth(gpus[0], True)
+
 
 # define paths to dataset and output paths
 TRAIN = 0
 VALIDATION = 1
-DATA_FOR = TRAIN
+
+if len(sys.argv) > 1:
+    DATA_FOR = TRAIN if sys.argv[1].strip().lower() == "train" else VALIDATION
+
+# DATA_FOR = TRAIN
 # DATA_FOR = VALIDATION
 
-print(f"==================== VGG 19 Feature Extraction for {"train images" if DATA_FOR == TRAIN else "Validation images"} ====================")
+MODEL_USED = 'vgg19'
+
+print(f"==================== VGG 19 Feature Extraction for {'train images' if DATA_FOR == TRAIN else 'Validation images'} ====================")
 
 image_dir = "Data/train_images" if DATA_FOR == TRAIN else "Data/val_images"
-output_file = "Output/train_features_vgg19.npy" if DATA_FOR == TRAIN else "Output/val_features_vgg19.npy"
-pickle_file = 'train_image_feature_vgg19.pkl' if DATA_FOR == TRAIN else "val_image_feature_vgg19.pkl"
+output_file = f"Output/train_features_{MODEL_USED}.npy" if DATA_FOR == TRAIN else f"Output/val_features_{MODEL_USED}.npy"
+pickle_file = f'./Pickle files/train_image_feature_{MODEL_USED}.pkl' if DATA_FOR == TRAIN else f"./Pickle files/val_image_feature_{MODEL_USED}.pkl"
 
 
 # define data generator to preprocess the images

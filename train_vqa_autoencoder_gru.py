@@ -1,11 +1,10 @@
+import json, pickle
 import tensorflow as tf
-import numpy as np
-import json
-from keras.layers import Input, Embedding, Dense, Dropout, concatenate
+from keras.layers import Input, Embedding, LSTM, Dense, Dropout, concatenate
 from keras.models import Model
 from keras.preprocessing.text import Tokenizer
 from keras.utils import pad_sequences
-import pickle
+import numpy as np
 import matplotlib.pyplot as plt
 
 def plot_history(history, savefilename):
@@ -34,7 +33,7 @@ def plot_history(history, savefilename):
 
 NUM_EPOCHS = 200
 
-IMG_FEATURE_MODEL = 'inceptionv3'
+IMG_FEATURE_MODEL = 'autoencoder'
 TEXT_MODEL_USED = 'gru'
 
 train_file_questions = './Data/v2_OpenEnded_mscoco_train2014_questions.json'
@@ -42,8 +41,6 @@ train_file_annotations = './Data/v2_mscoco_train2014_annotations.json'
 val_file_questions = './Data/v2_OpenEnded_mscoco_val2014_questions.json'
 val_file_annotations = './Data/v2_mscoco_val2014_annotations.json'
 test_file_questions = './Data/v2_OpenEnded_mscoco_test2015_questions.json'
-
-
 
 with open(train_file_questions, 'r') as f:
     train_questions = json.load(f)['questions']
@@ -60,11 +57,6 @@ with open(val_file_questions, 'r') as f:
 with open(val_file_annotations, 'r') as f:
     val_annotations = json.load(f)['annotations']
     f.close()
-
-# with open(test_file_questions, 'r') as f:
-#    test_questions = json.load(f)['questions']
-#    f.close()
-
 
 # Read train dictionary pkl file
 with open(f'./Pickle files/train_image_feature_{IMG_FEATURE_MODEL}.pkl', 'rb') as fp:  # change file location
@@ -132,7 +124,7 @@ with open(f"./Pickle files/tokenizer_{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}.pkl",
 # Convert the answers to integer labels and then to one hot vector
 labels = [label_map[answer] for answer in answers]
 
-# print(labels[:10])
+print(labels[:10])
 
 print("len of labels: ", len(labels))
 # one_hot_answers = tf.keras.utils.to_categorical(
@@ -141,6 +133,7 @@ print("len of labels: ", len(labels))
 print('features_id: ', len(features_id))
 print('shape of padded sequence: ', padded_sequences.shape)
 # print('one hot answer shape: ', one_hot_answers.shape)
+
 
 # split inplace 70-30 train test
 split_indices = np.random.randint(low=0, high=len(
@@ -182,11 +175,9 @@ val_features_id = []
 for i in split_indices:
     val_features_id.append(test_features_id.pop(i))
 
-# Concatenating gru with inception
-
 # Define the input layers
 question_input = Input(shape=(max_question_length,), name='question_input')
-image_input = Input(shape=(2048,), name='image_input')
+image_input = Input(shape=(512,), name='image_input')
 
 # Define the embedding layer for the questions
 question_embedding = Embedding(input_dim=len(word_index) + 1, output_dim=300, input_length=max_question_length,
@@ -213,13 +204,12 @@ dense_3 = Dense(256, activation='relu')(dense_2)
 
 output = Dense(units=29332, activation='softmax', name='output')(dense_3)
 
-# Define the model
+# Define the modelother
 model = Model(inputs=[question_input, image_input], outputs=output)
-model.compile(loss='sparse_categorical_crossentropy',
-              optimizer='nadam', metrics=['accuracy'])
+model.compile(loss='sparse_categorical_crossentropy', optimizer="nadam",
+              metrics=['accuracy'])
 
 
-# creating a custom generator
 def data_generator(image_features, padded_questions, labels, batch_size):
     num_samples = len(labels)
     steps_per_epoch = num_samples // batch_size
@@ -228,28 +218,23 @@ def data_generator(image_features, padded_questions, labels, batch_size):
             batch_image_features = []
             for j in image_features[i * batch_size:(i + 1) * batch_size]:
                 batch_image_features.append(train_imgs_features[j])
-            batch_padded_questions = padded_questions[i *
-                                                      batch_size:(i + 1) * batch_size]
+            batch_padded_questions = padded_questions[i * batch_size:(i + 1) * batch_size]
             batch_labels = labels[i * batch_size:(i + 1) * batch_size]
-            # print([np.asarray(batch_padded_questions), np.asarray(
-            #     batch_image_features)], np.asarray(batch_labels))
             yield [np.asarray(batch_padded_questions), np.asarray(batch_image_features)], np.asarray(batch_labels)
-
-
-checkpoint = tf.keras.callbacks.ModelCheckpoint(f"Checkpoints/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_{NUM_EPOCHS}", save_best_only=True)
 
 
 print("starting model training")
 batch_size = 32  # 128
 steps_per_epoch = len(labels) // batch_size
+
+checkpoint = tf.keras.callbacks.ModelCheckpoint(f"Checkpoints/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_{NUM_EPOCHS}", save_best_only=True)
+
 history = model.fit(data_generator(features_id, padded_sequences, labels, batch_size),
                     steps_per_epoch=steps_per_epoch,
                     epochs=NUM_EPOCHS,
-                    validation_data=data_generator(
-                        val_features_id, val_padded_sequences, val_labels, batch_size),
+                    validation_data=data_generator(val_features_id, val_padded_sequences, val_labels, batch_size),
                     validation_steps=int(len(val_features_id) / batch_size),
                     callbacks=[checkpoint])
-
 
 
 model.save(f"./Keras models/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.keras")

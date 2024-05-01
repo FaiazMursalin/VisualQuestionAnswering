@@ -33,6 +33,9 @@ def plot_history(history, savefilename):
 
 NUM_EPOCHS = 200
 
+IMG_FEATURE_MODEL = 'inceptionv3'
+TEXT_MODEL_USED = 'lstm'
+
 train_file_questions = './Data/v2_OpenEnded_mscoco_train2014_questions.json'
 train_file_annotations = './Data/v2_mscoco_train2014_annotations.json'
 val_file_questions = './Data/v2_OpenEnded_mscoco_val2014_questions.json'
@@ -56,11 +59,11 @@ with open(val_file_annotations, 'r') as f:
     f.close()
 
 # Read train dictionary pkl file
-with open('train_image_feature_inceptionv3.pkl', 'rb') as fp:  # change file location
+with open(f'./Pickle files/train_image_feature_{IMG_FEATURE_MODEL}.pkl', 'rb') as fp:  # change file location
     train_imgs_features = pickle.load(fp)
     print('successful')
 # Read validation dictionary pkl file
-with open('val_image_feature_inceptionv3.pkl', 'rb') as fp:  # change file location
+with open(f'./Pickle files/val_image_feature_{IMG_FEATURE_MODEL}.pkl', 'rb') as fp:  # change file location
     val_imgs_features = pickle.load(fp)
     print('successful')
 
@@ -99,7 +102,7 @@ answers_tokenizer.fit_on_texts(answers)
 answer_word_index = answers_tokenizer.word_index
 num_of_classes = len(answer_word_index)
 answer_sequences = answers_tokenizer.texts_to_sequences(answers)
-with open("answer_sequences_incepv3_lstm.pkl", "wb") as outfile:
+with open(f"./Pickle files/answer_sequences_{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}.pkl", "wb") as outfile:
     pickle.dump(answer_sequences, outfile)
 
 # pad the answers sequences so that they all have the same length
@@ -110,10 +113,10 @@ padded_answers = pad_sequences(answer_sequences, maxlen=max_answer_length)
 unique_answers = list(set(answers))
 print("len of unique answers: ", len(unique_answers))
 label_map = {answer: i for i, answer in enumerate(unique_answers)}
-with open("label_map_incepv3_lstm.pkl", "wb") as outfile:
+with open(f"./Pickle files/label_map_{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}.pkl", "wb") as outfile:
     pickle.dump(label_map, outfile)
 
-with open("tokenizer_incepv3_lstm.pkl", "wb") as outfile:
+with open(f"./Pickle files/tokenizer_{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}.pkl", "wb") as outfile:
     pickle.dump(tokenizer, outfile)
 
 # def batch_labels(labels)
@@ -232,12 +235,12 @@ history = model.fit(data_generator(features_id, padded_sequences, labels, batch_
                     callbacks=[checkpoint])
 
 
-model.save("f./inceptionv3_LSTM_Nadam_optimizer-run{NUM_EPOCHS}epochs.keras")
+model.save(f"./Keras models/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.keras")
+model.save(f"./H5 models/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.h5")
 print("model saved")
 
-plot_history(history, f"./inceptionv3_LSTM_Nadam_optimizer-run{NUM_EPOCHS}epochs.png")
 
-with open("inceptionv3_LSTM_Nadam_optimizer-run{NUM_EPOCHS}epochs.pkl", "wb") as outfile:
+plot_history(history, f"./PNG files/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.png")
+
+with open(f"./Pickle files/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.pkl", "wb") as outfile:
     pickle.dump(history, outfile)
-
-
