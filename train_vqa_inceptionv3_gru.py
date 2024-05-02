@@ -193,12 +193,12 @@ question_embedding = Embedding(input_dim=len(word_index) + 1, output_dim=300, in
                                name='question_embedding')(question_input)
 
 # Define the GRU layer for the questions
-question_lstm = tf.keras.layers.GRU(
-    units=256, name='question_lstm', return_sequences=True)(question_embedding)
-question_lstm = Dropout(0.2, name='question_dropout')(question_lstm)
-question_lstm2 = tf.keras.layers.GRU(
-    units=256, name='question_lstm2')(question_lstm)
-question_lstm2 = Dropout(0.2, name='question_dropout2')(question_lstm2)
+question_gru = tf.keras.layers.GRU(
+    units=256, name='question_gru', return_sequences=True)(question_embedding)
+question_gru = Dropout(0.2, name='question_dropout')(question_gru)
+question_gru2 = tf.keras.layers.GRU(
+    units=256, name='question_gru2')(question_gru)
+question_gru2 = Dropout(0.2, name='question_dropout2')(question_gru2)
 
 # Define the dense layer for the image features
 image_dense = Dense(units=256, activation='relu',
@@ -206,7 +206,7 @@ image_dense = Dense(units=256, activation='relu',
 image_dense = Dropout(0.2, name='image_dropout')(image_dense)
 
 # Concatenate the output from the LSTM and dense layers
-dense_1 = concatenate([question_lstm2, image_dense], name='concatenated')
+dense_1 = concatenate([question_gru2, image_dense], name='concatenated')
 dense_2 = Dense(512, activation='relu')(dense_1)
 dense_3 = Dense(256, activation='relu')(dense_2)
 # Define the output layer for the classification
