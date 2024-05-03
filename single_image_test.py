@@ -15,7 +15,7 @@ IMG_FEATURE_MODEL = 'autoencoder'
 TEXT_MODEL_USED = 'gru'
 TRAINING_EPCOHS = 200
 
-image_path = "./Data/train_images/train2014/COCO_train2014_000000458752.jpg"
+image_path = "./Data/test2015/COCO_test2015_000000000063.jpg"
 question = "What is the color of field?"
 
 def create_encoder():
@@ -60,7 +60,7 @@ def extract_image_feature(img_path, which_extractor):
 
 
 
-model = tf.keras.models.load_model(f"/Keras models/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{TRAINING_EPCOHS}epochs.keras")
+model = tf.keras.models.load_model(f"./Keras models/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{TRAINING_EPCOHS}epochs.keras")
 max_question_length = 30
 
 with open(f"./Pickle files/tokenizer_{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}.pkl", "rb") as infile:
@@ -79,5 +79,4 @@ print(question_data)
 # -- Predict the answers
 pred_ind = model.predict([np.asarray([padded_sequences[0]]), np.asarray([img_features[0]])])
 print("Predicted Answer: ", list(answer_map.keys())[np.argmax(pred_ind)])
-print("Predicted Answer: ", list(answer_map.values())[np.argmax(pred_ind)])
 
