@@ -1,7 +1,9 @@
+# for image feature extraction and training models at once
+
 import subprocess
-import sys
  
-# Define file pairs and args
+
+# format:  (file_name_for_feature_extraction, [args: train feature or validation feature], (lstm model, gru model with specific feature extraction method))
 file_pairs = [
     ("Image_feature_extraction_vgg19.py", ["train", "valid"], ("train_vqa_vgg19_lstm.py", "train_vqa_vgg19_gru.py")),
     ("image_feature_extraction_autoencoder.py", ["train", "valid"], ("train_vqa_autoencoder_lstm.py", "train_vqa_autoencoder_gru.py")),
@@ -17,26 +19,25 @@ def run_script(filename, args):
         return result.returncode == 0  # Return True if script exits successfully
     except subprocess.CalledProcessError:
         return False
- 
+    
 # Iterate over the file pairs
-for type1_file, args, type2_files in file_pairs:
-    # Run the first type file with the first set of arguments
-    print(f"Running {type1_file} with arguments {args}...")
+for feature_extraction_file, args, training_files in file_pairs:
+    # assume successful run for feature extraction
+    outs = True
+    for arg in args:
+        print(f"Running {feature_extraction_file} with argument {arg}...")
+        if not run_script(feature_extraction_file, [arg]): # if run_script return false, outs will be false
+            print(f"Failed run for {feature_extraction_file} with arg: {arg}")
+            outs = False
+        # continue running other args for feature extraction, so no break
 
-
-    if run_script(type1_file, [args[0]]):
-        print(f"Successfully ran {type1_file} with arguments {args[0]}.")
-
-        print(f"Running {type1_file} with arguments {args[1]}...")
-        if run_script(type1_file, [args[1]]):
-            print(f"Successfully ran {type1_file} with arguments {args[1]}. Now running {type2_files}...")
-            for type2_file in type2_files:
-                if run_script(type2_file, []):
-                    print(f"Successfully ran {type2_file}.")
-                else:
-                    print(f"Failed to run {type2_file}.")
-                
-        else:
-            print(f"Failed to run {type1_file} with arguments {args[1]}.")
-    else:
-        print(f"Failed to run {type1_file} with arguments {args[0]}. Skipping subsequent runs.")
+    # if all args feature extraction was successful:
+    # run model training
+    if outs:
+        for training_file in training_files:
+            # run training files
+            print(f"Now running {training_file}...")
+            if run_script(training_file, []):
+                    print(f"Successfully ran {training_file}.")
+            else:
+                print(f"Failed to run {training_file}.")
