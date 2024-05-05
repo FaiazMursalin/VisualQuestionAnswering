@@ -1,3 +1,8 @@
+'''Authors: 
+Debaleen Das Spandan
+S.M. Faiaz Mursalin
+'''
+
 import tensorflow as tf
 import numpy as np
 from keras.utils import pad_sequences
@@ -18,6 +23,7 @@ TRAINING_EPCOHS = 200
 image_path = "./Data/test2015/COCO_test2015_000000000063.jpg"
 question = "What is the color of field?"
 
+
 def create_encoder():
     # Input layer for the images (adapt size to your needs)
     inputs = Input(shape=(299, 299, 3))
@@ -29,21 +35,24 @@ def create_encoder():
     # Flatten and dense layers to produce the final feature vector
     x = Flatten()(x)
     encoded = tf.keras.layers.Dense(512, activation='relu')(x)
- 
+
     # Create model
     encoder = Model(inputs, encoded, name='encoder')
     return encoder
 
+
 def load_feature_extractor(which):
     if which == "inceptionv3":
         base_model = InceptionV3(weights='imagenet')
-        model = Model(inputs=base_model.input, outputs=base_model.get_layer('avg_pool').output)
+        model = Model(inputs=base_model.input,
+                      outputs=base_model.get_layer('avg_pool').output)
         return model, inception_preprocessing, (299, 299)
     elif which == "autoencoder":
         return create_encoder(), inception_preprocessing, (299, 299)
     elif which == "vg19":
         base_model = VGG19(weights="imagenet")
-        model = Model(inputs=base_model.input, outputs=base_model.get_layer("flatten").output)
+        model = Model(inputs=base_model.input,
+                      outputs=base_model.get_layer("flatten").output)
         return model, vgg_preprocessing, (224, 224)
     else:
         raise SystemExit(f"{which} feature extractor not supported.")
@@ -52,15 +61,16 @@ def load_feature_extractor(which):
 def extract_image_feature(img_path, which_extractor):
     img = cv2.imread(img_path)
     img = tf.cast(img, tf.float32)
-    feature_extractor, preprocess_input, target_shape = load_feature_extractor(which_extractor)
+    feature_extractor, preprocess_input, target_shape = load_feature_extractor(
+        which_extractor)
     img = preprocess_input(img)
     img = tf.image.resize(img, target_shape)
     img = tf.expand_dims(img, axis=0)
     return feature_extractor.predict(img)
 
 
-
-model = tf.keras.models.load_model(f"./Keras models/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{TRAINING_EPCOHS}epochs.keras")
+model = tf.keras.models.load_model(
+    f"./Keras models/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{TRAINING_EPCOHS}epochs.keras")
 max_question_length = 30
 
 with open(f"./Pickle files/tokenizer_{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}.pkl", "rb") as infile:
@@ -77,6 +87,6 @@ question_data = tokenizer.texts_to_sequences(question)
 padded_sequences = pad_sequences(question_data, maxlen=max_question_length)
 print(question_data)
 # -- Predict the answers
-pred_ind = model.predict([np.asarray([padded_sequences[0]]), np.asarray([img_features[0]])])
+pred_ind = model.predict(
+    [np.asarray([padded_sequences[0]]), np.asarray([img_features[0]])])
 print("Predicted Answer: ", list(answer_map.keys())[np.argmax(pred_ind)])
-

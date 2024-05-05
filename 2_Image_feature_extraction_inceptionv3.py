@@ -1,3 +1,8 @@
+'''Authors: 
+Debaleen Das Spandan
+S.M. Faiaz Mursalin
+'''
+
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Model
@@ -19,12 +24,11 @@ VALIDATION = 1
 if len(sys.argv) > 1:
     DATA_FOR = TRAIN if sys.argv[1].strip().lower() == "train" else VALIDATION
 
-# DATA_FOR = TRAIN
-# DATA_FOR = VALIDATION
 
 MODEL_USED = "inceptionv3"
 
-print(f"==================== Inception v3 Feature Extraction for {'train images' if DATA_FOR == TRAIN else 'Validation images'} ====================")
+print(
+    f"==================== Inception v3 Feature Extraction for {'train images' if DATA_FOR == TRAIN else 'Validation images'} ====================")
 
 image_dir = "Data/train_images" if DATA_FOR == TRAIN else "Data/val_images"
 output_file = f"Output/train_features_{MODEL_USED}.npy" if DATA_FOR == TRAIN else f"Output/val_features_{MODEL_USED}.npy"
@@ -40,7 +44,8 @@ generator = datagen.flow_from_directory(
 
 # create inception v3 model to extract image features
 base_model = InceptionV3(weights='imagenet')
-model = Model(inputs=base_model.input, outputs=base_model.get_layer('avg_pool').output)
+model = Model(inputs=base_model.input,
+              outputs=base_model.get_layer('avg_pool').output)
 
 # extract image feature for each image in the training set
 train_features = []
@@ -58,11 +63,11 @@ if train_features:
     np.save(output_file, train_features)
 
     # save features with IDs in a dictionary in a pkl file and add IDs to features
-    img_ids = np.array([int(re.search("[0-9][0-9][0-9][0-9][0-9]+", gen).group()) for gen in generator.filenames])
+    img_ids = np.array([int(re.search("[0-9][0-9][0-9][0-9][0-9]+", gen).group())
+                       for gen in generator.filenames])
     image_features = {}
     for i in range(len(img_ids)):
         image_features[img_ids[i]] = train_features[i]
-
 
     # save dictionary to train_image_feature_inception.pkl file
     with open(pickle_file, 'wb') as fp:
@@ -71,4 +76,3 @@ if train_features:
 
 else:
     print('No images found in the specified directory.')
-

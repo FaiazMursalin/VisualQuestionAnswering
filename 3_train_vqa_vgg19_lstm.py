@@ -1,15 +1,22 @@
-import tensorflow as tf
-import numpy as np
+'''Authors: 
+Debaleen Das Spandan
+S.M. Faiaz Mursalin
+'''
+
+
 import json
-from keras.layers import Input, Embedding, Dense, Dropout, concatenate
+import pickle
+import tensorflow as tf
+from keras.layers import Input, Embedding, LSTM, Dense, Dropout, concatenate
 from keras.models import Model
 from keras.preprocessing.text import Tokenizer
 from keras.utils import pad_sequences
-import pickle
+import numpy as np
 import matplotlib.pyplot as plt
 
+
 def plot_history(history, savefilename):
-    plt.figure(figsize=(12,6), dpi=300.0)
+    plt.figure(figsize=(12, 6), dpi=300.0)
     plt.subplot(1, 2, 1)
     plt.plot(history.history['accuracy'])
     plt.plot(history.history['val_accuracy'])
@@ -34,16 +41,14 @@ def plot_history(history, savefilename):
 
 NUM_EPOCHS = 200
 
-IMG_FEATURE_MODEL = 'inceptionv3'
-TEXT_MODEL_USED = 'gru'
+IMG_FEATURE_MODEL = 'vgg19'
+TEXT_MODEL_USED = 'lstm'
 
 train_file_questions = './Data/v2_OpenEnded_mscoco_train2014_questions.json'
 train_file_annotations = './Data/v2_mscoco_train2014_annotations.json'
 val_file_questions = './Data/v2_OpenEnded_mscoco_val2014_questions.json'
 val_file_annotations = './Data/v2_mscoco_val2014_annotations.json'
 test_file_questions = './Data/v2_OpenEnded_mscoco_test2015_questions.json'
-
-
 
 with open(train_file_questions, 'r') as f:
     train_questions = json.load(f)['questions']
@@ -61,17 +66,14 @@ with open(val_file_annotations, 'r') as f:
     val_annotations = json.load(f)['annotations']
     f.close()
 
-# with open(test_file_questions, 'r') as f:
-#    test_questions = json.load(f)['questions']
-#    f.close()
-
-
 # Read train dictionary pkl file
-with open(f'./Pickle files/train_image_feature_{IMG_FEATURE_MODEL}.pkl', 'rb') as fp:  # change file location
+# change file location
+with open(f'./Pickle files/train_image_feature_{IMG_FEATURE_MODEL}.pkl', 'rb') as fp:
     train_imgs_features = pickle.load(fp)
     print('successful')
 # Read validation dictionary pkl file
-with open(f'./Pickle files/val_image_feature_{IMG_FEATURE_MODEL}.pkl', 'rb') as fp:  # change file location
+# change file location
+with open(f'./Pickle files/val_image_feature_{IMG_FEATURE_MODEL}.pkl', 'rb') as fp:
     val_imgs_features = pickle.load(fp)
     print('successful')
 
@@ -132,7 +134,7 @@ with open(f"./Pickle files/tokenizer_{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}.pkl",
 # Convert the answers to integer labels and then to one hot vector
 labels = [label_map[answer] for answer in answers]
 
-# print(labels[:10])
+print(labels[:10])
 
 print("len of labels: ", len(labels))
 # one_hot_answers = tf.keras.utils.to_categorical(
@@ -141,6 +143,7 @@ print("len of labels: ", len(labels))
 print('features_id: ', len(features_id))
 print('shape of padded sequence: ', padded_sequences.shape)
 # print('one hot answer shape: ', one_hot_answers.shape)
+
 
 # split inplace 70-30 train test
 split_indices = np.random.randint(low=0, high=len(
@@ -182,23 +185,22 @@ val_features_id = []
 for i in split_indices:
     val_features_id.append(test_features_id.pop(i))
 
-# Concatenating gru with inception
 
 # Define the input layers
 question_input = Input(shape=(max_question_length,), name='question_input')
-image_input = Input(shape=(2048,), name='image_input')
+image_input = Input(shape=(25088,), name='image_input')
 
 # Define the embedding layer for the questions
-question_embedding = Embedding(input_dim=len(word_index) + 1, output_dim=300, input_length=max_question_length,
+question_embedding = Embedding(input_dim=len(word_index)+1, output_dim=300, input_length=max_question_length,
                                name='question_embedding')(question_input)
 
-# Define the GRU layer for the questions
-question_gru = tf.keras.layers.GRU(
-    units=256, name='question_gru', return_sequences=True)(question_embedding)
-question_gru = Dropout(0.2, name='question_dropout')(question_gru)
-question_gru2 = tf.keras.layers.GRU(
-    units=256, name='question_gru2')(question_gru)
-question_gru2 = Dropout(0.2, name='question_dropout2')(question_gru2)
+# Define the LSTM layer for the questions
+question_lstm = LSTM(units=512, name='question_lstm',
+                     return_sequences=True)(question_embedding)
+question_lstm = Dropout(0.3, name='question_dropout')(question_lstm)
+
+question_lstm2 = LSTM(units=256, name='question_lstm2')(question_lstm)
+question_lstm2 = Dropout(0.2, name='question_dropout2')(question_lstm2)
 
 # Define the dense layer for the image features
 image_dense = Dense(units=256, activation='relu',
@@ -206,20 +208,20 @@ image_dense = Dense(units=256, activation='relu',
 image_dense = Dropout(0.2, name='image_dropout')(image_dense)
 
 # Concatenate the output from the LSTM and dense layers
-dense_1 = concatenate([question_gru2, image_dense], name='concatenated')
-dense_2 = Dense(512, activation='relu')(dense_1)
-dense_3 = Dense(256, activation='relu')(dense_2)
+concatenated = concatenate([question_lstm2, image_dense], name='concatenated')
+
+dense_cnc = Dense(units=512, activation='relu', name='dens_conc')(concatenated)
+dense_cnc2 = Dense(units=512, activation='relu', name='dens_conc2')(dense_cnc)
 # Define the output layer for the classification
+output = Dense(units=len(unique_answers),
+               activation='softmax', name='output')(dense_cnc2)
 
-output = Dense(units=29332, activation='softmax', name='output')(dense_3)
-
-# Define the model
+# Define the modelother
 model = Model(inputs=[question_input, image_input], outputs=output)
-model.compile(loss='sparse_categorical_crossentropy',
-              optimizer='nadam', metrics=['accuracy'])
+model.compile(loss='sparse_categorical_crossentropy', optimizer=tf.keras.optimizers.SGD(lr=0.001, momentum=0.9),
+              metrics=['accuracy'])
 
 
-# creating a custom generator
 def data_generator(image_features, padded_questions, labels, batch_size):
     num_samples = len(labels)
     steps_per_epoch = num_samples // batch_size
@@ -231,17 +233,16 @@ def data_generator(image_features, padded_questions, labels, batch_size):
             batch_padded_questions = padded_questions[i *
                                                       batch_size:(i + 1) * batch_size]
             batch_labels = labels[i * batch_size:(i + 1) * batch_size]
-            # print([np.asarray(batch_padded_questions), np.asarray(
-            #     batch_image_features)], np.asarray(batch_labels))
             yield [np.asarray(batch_padded_questions), np.asarray(batch_image_features)], np.asarray(batch_labels)
-
-
-checkpoint = tf.keras.callbacks.ModelCheckpoint(f"Checkpoints/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_{NUM_EPOCHS}", save_best_only=True)
 
 
 print("starting model training")
 batch_size = 32  # 128
 steps_per_epoch = len(labels) // batch_size
+
+checkpoint = tf.keras.callbacks.ModelCheckpoint(
+    f"Checkpoints/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_{NUM_EPOCHS}", save_best_only=True)
+
 history = model.fit(data_generator(features_id, padded_sequences, labels, batch_size),
                     steps_per_epoch=steps_per_epoch,
                     epochs=NUM_EPOCHS,
@@ -251,13 +252,15 @@ history = model.fit(data_generator(features_id, padded_sequences, labels, batch_
                     callbacks=[checkpoint])
 
 
-
-model.save(f"./Keras models/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.keras")
-model.save(f"./H5 models/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.h5")
+model.save(
+    f"./Keras models/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_SGD_optimizer-run{NUM_EPOCHS}epochs.keras")
+model.save(
+    f"./H5 models/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_SGD_optimizer-run{NUM_EPOCHS}epochs.h5")
 print("model saved")
 
 
-plot_history(history, f"./PNG files/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.png")
+plot_history(
+    history, f"./PNG files/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_SGD_optimizer-run{NUM_EPOCHS}epochs.png")
 
-with open(f"./Pickle files/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.pkl", "wb") as outfile:
+with open(f"./Pickle files/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_SGD_optimizer-run{NUM_EPOCHS}epochs.pkl", "wb") as outfile:
     pickle.dump(history, outfile)

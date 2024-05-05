@@ -1,3 +1,8 @@
+'''Authors: 
+Debaleen Das Spandan
+S.M. Faiaz Mursalin
+'''
+
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 import tensorflow as tf
@@ -24,7 +29,8 @@ if len(sys.argv) > 1:
 
 MODEL_USED = 'vgg19'
 
-print(f"==================== VGG 19 Feature Extraction for {'train images' if DATA_FOR == TRAIN else 'Validation images'} ====================")
+print(
+    f"==================== VGG 19 Feature Extraction for {'train images' if DATA_FOR == TRAIN else 'Validation images'} ====================")
 
 image_dir = "Data/train_images" if DATA_FOR == TRAIN else "Data/val_images"
 output_file = f"Output/train_features_{MODEL_USED}.npy" if DATA_FOR == TRAIN else f"Output/val_features_{MODEL_USED}.npy"
@@ -40,7 +46,8 @@ generator = datagen.flow_from_directory(
 
 # create a vgg19 model to extract image features
 base_model = VGG19(weights="imagenet")
-model = Model(inputs=base_model.input, outputs=base_model.get_layer("flatten").output)
+model = Model(inputs=base_model.input,
+              outputs=base_model.get_layer("flatten").output)
 
 # extract image features for each image in the training set
 train_features = []
@@ -58,7 +65,8 @@ if train_features:
     np.save(output_file, train_features)
 
     # save features with IDs in a dictionary in a pkl file and add IDs to features
-    img_ids = np.array([int(re.search("[0-9][0-9][0-9][0-9][0-9]+", gen).group()) for gen in generator.filenames])
+    img_ids = np.array([int(re.search("[0-9][0-9][0-9][0-9][0-9]+", gen).group())
+                       for gen in generator.filenames])
     image_features = {}
     for i in range(len(img_ids)):
         image_features[img_ids[i]] = train_features[i]

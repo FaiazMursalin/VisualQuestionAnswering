@@ -1,4 +1,10 @@
-import json, pickle
+'''Authors: 
+Debaleen Das Spandan
+S.M. Faiaz Mursalin
+'''
+
+import json
+import pickle
 import tensorflow as tf
 from keras.layers import Input, Embedding, LSTM, Dense, Dropout, concatenate
 from keras.models import Model
@@ -7,8 +13,9 @@ from keras.utils import pad_sequences
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def plot_history(history, savefilename):
-    plt.figure(figsize=(12,6), dpi=300.0)
+    plt.figure(figsize=(12, 6), dpi=300.0)
     plt.subplot(1, 2, 1)
     plt.plot(history.history['accuracy'])
     plt.plot(history.history['val_accuracy'])
@@ -59,11 +66,13 @@ with open(val_file_annotations, 'r') as f:
     f.close()
 
 # Read train dictionary pkl file
-with open(f'./Pickle files/train_image_feature_{IMG_FEATURE_MODEL}.pkl', 'rb') as fp:  # change file location
+# change file location
+with open(f'./Pickle files/train_image_feature_{IMG_FEATURE_MODEL}.pkl', 'rb') as fp:
     train_imgs_features = pickle.load(fp)
     print('successful')
 # Read validation dictionary pkl file
-with open(f'./Pickle files/val_image_feature_{IMG_FEATURE_MODEL}.pkl', 'rb') as fp:  # change file location
+# change file location
+with open(f'./Pickle files/val_image_feature_{IMG_FEATURE_MODEL}.pkl', 'rb') as fp:
     val_imgs_features = pickle.load(fp)
     print('successful')
 
@@ -202,7 +211,8 @@ dense_2 = Dense(512, activation='relu')(dense_1)
 dense_3 = Dense(256, activation='relu')(dense_2)
 # Define the output layer for the classification
 
-output = Dense(units=29332, activation='softmax', name='output')(dense_3)
+output = Dense(units=len(unique_answers),
+               activation='softmax', name='output')(dense_3)
 
 # Define the modelother
 model = Model(inputs=[question_input, image_input], outputs=output)
@@ -218,7 +228,8 @@ def data_generator(image_features, padded_questions, labels, batch_size):
             batch_image_features = []
             for j in image_features[i * batch_size:(i + 1) * batch_size]:
                 batch_image_features.append(train_imgs_features[j])
-            batch_padded_questions = padded_questions[i * batch_size:(i + 1) * batch_size]
+            batch_padded_questions = padded_questions[i *
+                                                      batch_size:(i + 1) * batch_size]
             batch_labels = labels[i * batch_size:(i + 1) * batch_size]
             yield [np.asarray(batch_padded_questions), np.asarray(batch_image_features)], np.asarray(batch_labels)
 
@@ -227,22 +238,27 @@ print("starting model training")
 batch_size = 32  # 128
 steps_per_epoch = len(labels) // batch_size
 
-checkpoint = tf.keras.callbacks.ModelCheckpoint(f"Checkpoints/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_{NUM_EPOCHS}", save_best_only=True)
+checkpoint = tf.keras.callbacks.ModelCheckpoint(
+    f"Checkpoints/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_{NUM_EPOCHS}", save_best_only=True)
 
 history = model.fit(data_generator(features_id, padded_sequences, labels, batch_size),
                     steps_per_epoch=steps_per_epoch,
                     epochs=NUM_EPOCHS,
-                    validation_data=data_generator(val_features_id, val_padded_sequences, val_labels, batch_size),
+                    validation_data=data_generator(
+                        val_features_id, val_padded_sequences, val_labels, batch_size),
                     validation_steps=int(len(val_features_id) / batch_size),
                     callbacks=[checkpoint])
 
 
-model.save(f"./Keras models/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.keras")
-model.save(f"./H5 models/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.h5")
+model.save(
+    f"./Keras models/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.keras")
+model.save(
+    f"./H5 models/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.h5")
 print("model saved")
 
 
-plot_history(history, f"./PNG files/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.png")
+plot_history(
+    history, f"./PNG files/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.png")
 
 with open(f"./Pickle files/{IMG_FEATURE_MODEL}_{TEXT_MODEL_USED}_nadam_optimizer-run{NUM_EPOCHS}epochs.pkl", "wb") as outfile:
     pickle.dump(history, outfile)
